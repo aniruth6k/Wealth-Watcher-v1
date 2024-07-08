@@ -1235,6 +1235,62 @@ def get_company_news(ticker):
     except Exception as e:
         return f"An error occurred: {str(e)}"
     
+def get_income_statement(ticker):
+    data = yf.Ticker(ticker).financials
+    return data.to_json() if not data.empty else "Unable to fetch income statement data for the given ticker symbol."
+
+def get_balance_sheet(ticker):
+    data = yf.Ticker(ticker).balance_sheet
+    return data.to_json() if not data.empty else "Unable to fetch balance sheet data for the given ticker symbol."
+
+def get_cash_flow(ticker):
+    data = yf.Ticker(ticker).cashflow
+    return data.to_json() if not data.empty else "Unable to fetch cash flow data for the given ticker symbol."
+
+def get_major_holders(ticker):
+    data = yf.Ticker(ticker).major_holders
+    return data.to_json() if not data.empty else "Unable to fetch major holders data for the given ticker symbol."
+
+def get_institutional_holders(ticker):
+    data = yf.Ticker(ticker).institutional_holders
+    return data.to_json() if not data.empty else "Unable to fetch institutional holders data for the given ticker symbol."
+
+def get_mutualfund_holders(ticker):
+    data = yf.Ticker(ticker).mutualfund_holders
+    return data.to_json() if not data.empty else "Unable to fetch mutual fund holders data for the given ticker symbol."
+
+def get_insider_transactions(ticker):
+    data = yf.Ticker(ticker).insider_transactions
+    return data.to_json() if not data.empty else "Unable to fetch insider transactions data for the given ticker symbol."
+
+def get_insider_purchases(ticker):
+    data = yf.Ticker(ticker).insider_purchases
+    return data.to_json() if not data.empty else "Unable to fetch insider purchases data for the given ticker symbol."
+
+def get_recommendations(ticker):
+    data = yf.Ticker(ticker).recommendations
+    return data.to_json() if not data.empty else "Unable to fetch recommendations data for the given ticker symbol."
+
+def get_recommendations_summary(ticker):
+    data = yf.Ticker(ticker).recommendations_summary
+    return data.to_json() if not data.empty else "Unable to fetch recommendations summary data for the given ticker symbol."
+
+def get_future_earnings(ticker):
+    data = yf.Ticker(ticker).earnings_dates
+    return data.to_json() if not data.empty else "Unable to fetch future earnings data for the given ticker symbol."
+
+def get_news(ticker):
+    data = yf.Ticker(ticker).news
+    return json.dumps(data) if data else "Unable to fetch news data for the given ticker symbol."
+
+def get_recent_actions(ticker):
+    data = yf.Ticker(ticker).actions
+    return data.tail(5).to_json() if not data.empty else "Unable to fetch recent actions data for the given ticker symbol."
+
+def get_stock_split(ticker):
+    data = yf.Ticker(ticker).splits
+    return data.to_json() if not data.empty else "Unable to fetch stock split data for the given ticker symbol."
+
 functions = [
         {
         'name': 'get_stock_price',
@@ -1821,6 +1877,202 @@ functions = [
             'required': ['ticker']
         }
     },
+    {
+        'name': 'get_income_statement',
+        'description': 'Gets the income statement given the ticker symbol of a company.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_balance_sheet',
+        'description': 'Gets the balance sheet given the ticker symbol of a company.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_cash_flow',
+        'description': 'Gets the cash flow statement given the ticker symbol of a company.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_major_holders',
+        'description': 'Gets the major holders given the ticker symbol of a company.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_institutional_holders',
+        'description': 'Gets the institutional holders given the ticker symbol of a company.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_mutualfund_holders',
+        'description': 'Gets the mutual fund holders given the ticker symbol of a company.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_insider_transactions',
+        'description': 'Gets the insider transactions given the ticker symbol of a company.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_insider_purchases',
+        'description': 'Gets the insider purchases given the ticker symbol of a company.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_recommendations',
+        'description': 'Gets the recommendations given the ticker symbol of a company.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_recommendations_summary',
+        'description': 'Gets the recommendations summary given the ticker symbol of a company.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_future_earnings',
+        'description': 'Gets the future earnings dates given the ticker symbol of a company.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_news',
+        'description': 'Gets the news given the ticker symbol of a company.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_recent_actions',
+        'description': 'Gets the recent actions of a company given its ticker symbol.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
+    {
+        'name': 'get_stock_split',
+        'description': 'Gets the stock split data of a company given its ticker symbol.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ticker': {
+                    'type': 'string',
+                    'description': 'The stock ticker symbol for a company (for example AAPL for Apple).'
+                }
+            },
+            'required': ['ticker']
+        }
+    },
 ]
 
 available_functions = {
@@ -1869,6 +2121,20 @@ available_functions = {
     'get_economic_events_impacting_market': get_economic_events_impacting_market,
     'get_analyst_opinions': get_analyst_opinions,
     'get_company_news': get_company_news,
+    'get_income_statement': get_income_statement,
+    'get_balance_sheet': get_balance_sheet,
+    'get_cash_flow': get_cash_flow,
+    'get_major_holders': get_major_holders,
+    'get_institutional_holders': get_institutional_holders,
+    'get_mutualfund_holders': get_mutualfund_holders,
+    'get_insider_transactions': get_insider_transactions,
+    'get_insider_purchases': get_insider_purchases,
+    'get_recommendations': get_recommendations,
+    'get_recommendations_summary': get_recommendations_summary,
+    'get_future_earnings': get_future_earnings,
+    'get_news': get_news,
+    'get_recent_actions': get_recent_actions,
+    'get_stock_split': get_stock_split,
 }
 
 def get_response(query, chat_history):
@@ -2033,6 +2299,22 @@ def get_response(query, chat_history):
                         args_dict = {'ticker': function_args.get('ticker')}
                         function_response = function_to_call(**args_dict)
                         #st.write(function_response)
+                    elif function_name in ['get_income_statement', 'get_balance_sheet', 'get_cash_flow']:
+                        args_dict = {'ticker': function_args.get('ticker')}
+                    elif function_name in ['get_major_holders', 'get_institutional_holders', 'get_mutualfund_holders']:
+                        args_dict = {'ticker': function_args.get('ticker')}
+                    elif function_name in ['get_insider_transactions', 'get_insider_purchases']:
+                        args_dict = {'ticker': function_args.get('ticker')}
+                    elif function_name in ['get_recommendations', 'get_recommendations_summary']:
+                        args_dict = {'ticker': function_args.get('ticker')}
+                    elif function_name == 'get_future_earnings':
+                        args_dict = {'ticker': function_args.get('ticker')}
+                    elif function_name == 'get_news':
+                        args_dict = {'ticker': function_args.get('ticker')}
+                    elif function_name == 'get_recent_actions':
+                        args_dict = {'ticker': function_args.get('ticker')}
+                    elif function_name == 'get_stock_split':
+                        args_dict = {'ticker': function_args.get('ticker')}
                     else:
                         # Handle any other functions or unknown functions
                         args_dict = function_args
