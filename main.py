@@ -2502,7 +2502,6 @@ def get_response(query, chat_history):
                         "get_stock_price",
                         "calculate_RSI",
                         "calculate_MACD",
-                        "plot_stock_price",
                     ]:
                         args_dict = {"ticker": function_args.get("ticker")}
                     elif function_name in ["calculate_SMA", "calculate_EMA"]:
