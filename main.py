@@ -96,26 +96,30 @@ def get_52_week_low(ticker):
         return "Unable to fetch 52-week low data for the given ticker symbol."
 
 
-def plot_stock_price(ticker, period=None, year=None):
+def plot_stock_price(ticker, period=None, year=None, start_year=None, end_year=None):
     try:
-        if year:
+        if start_year and end_year:
+            start_date = f"{start_year}-01-01"
+            end_date = f"{end_year}-12-31"
+            data = yf.Ticker(ticker).history(start=start_date, end=end_date)
+            title = f"{ticker} Stock Price Chart from {start_year} to {end_year}"
+        elif year:
             start_date = f"{year}-01-01"
             end_date = f"{year}-12-31"
             data = yf.Ticker(ticker).history(start=start_date, end=end_date)
+            title = f"{ticker} Stock Price Chart for {year}"
         else:
             if period:
                 period_str = f"{period}y"
             else:
                 period_str = "1y"
             data = yf.Ticker(ticker).history(period=period_str)
+            title = f"{ticker} {period}-Year Stock Price Chart"
 
         if not data.empty:
             plt.figure(figsize=(10, 6))
             plt.plot(data.index, data["Close"])
-            if year:
-                plt.title(f"{ticker} Stock Price Chart for {year}")
-            else:
-                plt.title(f"{ticker} {period}-Year Stock Price Chart")
+            plt.title(title)
             plt.xlabel("Date")
             plt.ylabel("Price (USD)")
             plt.savefig("stock.png", bbox_inches="tight")
@@ -1726,6 +1730,14 @@ functions = [
                     "type": "integer",
                     "description": "The specific year to plot (e.g., 2022 for the year 2022)",
                 },
+                "start_year": {
+                    "type": "integer",
+                    "description": "The start year to plot (e.g., 2020)",
+                },
+                "end_year": {
+                    "type": "integer",
+                    "description": "The end year to plot (e.g., 2023)",
+                },
             },
             "required": ["ticker"],
         },
@@ -2492,10 +2504,11 @@ def get_response(query, chat_history):
                         "ticker": function_args.get("ticker"),
                         "period": function_args.get("period"),
                         "year": function_args.get("year"),
+                        "start_year": function_args.get("start_year"),
+                        "end_year": function_args.get("end_year"),
                     }
                     function_response = function_to_call(**args_dict)
-                    st.image("stock.png")
-                    # Display the textual response
+                    st.image("stock.png")  # Display the textual response
                     # No need to try displaying an image anymore
                 else:
                     if function_name in [
