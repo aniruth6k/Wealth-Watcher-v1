@@ -20,6 +20,29 @@ load_dotenv()
 st.set_page_config(page_title="Wealth Watcher", page_icon=":chart_with_upwards_trend:")
 st.title("Wealth Watcher")
 
+st.markdown(
+    """
+    <style>
+    .reportview-container {
+        margin-top: -2em;
+    }
+    #MainMenu {
+        visibility: hidden;
+    }
+    .stDeployButton {
+        display:none;
+    }
+    footer {
+        visibility: hidden;
+    }
+    #stDecoration {
+        display:none;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
         AIMessage(content="Hello, I am a financial advisor. How can I help you?")
