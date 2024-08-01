@@ -26,6 +26,10 @@ if "chat_history" not in st.session_state:
     ]
 
 
+def get_nse_ticker(ticker):
+    return ticker + ".NS"
+
+
 def get_stock_price(ticker):
     data = yf.Ticker(ticker).history(period="1y")
     if not data.empty:
@@ -446,30 +450,6 @@ def plot_stock_with_macd(ticker, period="1y"):
             return f"The stock price chart with MACD for {ticker} has been generated."
     except Exception as e:
         return f"An error occurred: {str(e)}"
-
-
-# def get_latest_market_news():
-#    try:
-#        news_api_key = os.environ.get('NEWS_API_KEY')
-#        if not news_api_key:
-#            return "Please set the NEWS_API_KEY environment variable."
-#
-#        newsapi = NewsApiClient(api_key=news_api_key)
-#        market_news = newsapi.get_top_headlines(q='stock market', language='en', country='us')
-#        if market_news['totalResults'] > 0:
-#            latest_articles = market_news['articles'][:10]  # Get the top 10 latest articles
-#            article_summaries = []
-#            for article in latest_articles:
-#                title = article['title']
-#                description = article['description']
-#                url = article['url']
-#                summary = f"Title: {title}\nDescription: {description}\nURL: {url}\n"
-#                article_summaries.append(summary)
-#                st.markdown(summary)  # Print each summary as it's generated
-#        else:
-#            st.write("No recent news found related to the stock market.")
-#    except Exception as e:
-#        return f"An error occurred: {str(e)}"
 
 
 def compare_valuations(ticker1, ticker2):
@@ -1335,10 +1315,6 @@ def should_rebalance_portfolio():
     return "No need to rebalance at this time. Your portfolio is reasonably balanced."
 
 
-import os
-from newsapi import NewsApiClient
-
-
 def get_latest_market_news():
     try:
         news_api_key = os.environ.get("NEWS_API_KEY")
@@ -1466,30 +1442,51 @@ def get_company_news(ticker):
 
 
 def get_income_statement(ticker):
-    data = yf.Ticker(ticker).financials
-    return (
-        data.to_json()
-        if not data.empty
-        else "Unable to fetch income statement data for the given ticker symbol."
-    )
+    try:
+        data = yf.Ticker(ticker).financials
+        if data.empty:
+            return "Unable to fetch income statement data for the given ticker symbol."
+
+        # Summarize the income statement data
+        summary = data.head(10)  # Limiting to the first 5 rows
+        return summary.to_json()
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
 
 
 def get_balance_sheet(ticker):
-    data = yf.Ticker(ticker).balance_sheet
-    return (
-        data.to_json()
-        if not data.empty
-        else "Unable to fetch balance sheet data for the given ticker symbol."
-    )
+    try:
+        data = yf.Ticker(ticker).balance_sheet
+        if data.empty:
+            return "Unable to fetch balance sheet data for the given ticker symbol."
+
+        # Summarize the balance sheet data
+        summary = data.head(10)  # Limiting to the first 10 rows
+        return summary.to_json()
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+# def get_cash_flow(ticker):
+# data = yf.Ticker(ticker).cashflow
+# return (
+# data.to_json()
+# if not data.empty
+# else "Unable to fetch cash flow data for the given ticker symbol."
+# )
 
 
 def get_cash_flow(ticker):
-    data = yf.Ticker(ticker).cashflow
-    return (
-        data.to_json()
-        if not data.empty
-        else "Unable to fetch cash flow data for the given ticker symbol."
-    )
+    try:
+        data = yf.Ticker(ticker).cashflow
+        if data.empty:
+            return "Unable to fetch cash flow data for the given ticker symbol."
+
+        # Summarize the cash flow data
+        summary = data.head(10)  # Limiting to the first 10 rows
+        return summary.to_json()
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
 
 
 def get_major_holders(ticker):
@@ -1589,6 +1586,666 @@ def get_stock_split(ticker):
         if not data.empty
         else "Unable to fetch stock split data for the given ticker symbol."
     )
+
+
+def plot_bar_chart(ticker, period=None, year=None, start_year=None, end_year=None):
+    try:
+        if start_year and end_year:
+            start_date = f"{start_year}-01-01"
+            end_date = f"{end_year}-12-31"
+            data = yf.Ticker(ticker).history(start=start_date, end=end_date)
+            title = f"{ticker} Bar Chart from {start_year} to {end_year}"
+        elif year:
+            start_date = f"{year}-01-01"
+            end_date = f"{year}-12-31"
+            data = yf.Ticker(ticker).history(start=start_date, end=end_date)
+            title = f"{ticker} Bar Chart for {year}"
+        else:
+            period_str = f"{period}y" if period else "1y"
+            data = yf.Ticker(ticker).history(period=period_str)
+            title = f"{ticker} {period}-Year Bar Chart"
+
+        if not data.empty:
+            plt.figure(figsize=(10, 6))
+            plt.bar(data.index, data["Close"])
+            plt.title(title)
+            plt.xlabel("Date")
+            plt.ylabel("Price (USD)")
+            plt.savefig("bar_chart.png", bbox_inches="tight")
+            return "The bar chart has been generated."
+        else:
+            return "Unable to fetch bar chart data for the given ticker symbol."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_ordinary_shares_number(ticker):
+    try:
+        data = yf.Ticker(ticker).balance_sheet
+        ordinary_shares_number = data.loc["Ordinary Shares Number"]
+        if not ordinary_shares_number.empty:
+            plt.figure(figsize=(10, 6))
+            ordinary_shares_number.plot(kind="bar")
+            plt.title(f"{ticker} Ordinary Shares Number")
+            plt.xlabel("Date")
+            plt.ylabel("Number of Shares")
+            plt.savefig("ordinary_shares_number.png", bbox_inches="tight")
+            plt.close()
+        return "The ordinary shares number chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_share_issued(ticker):
+    try:
+        data = yf.Ticker(ticker).balance_sheet
+        share_issued = data.loc["Share Issued"]
+        if not share_issued.empty:
+            plt.figure(figsize=(10, 6))
+            share_issued.plot(kind="bar")
+            plt.title(f"{ticker} Share Issued")
+            plt.xlabel("Date")
+            plt.ylabel("Number of Shares Issued")
+            plt.savefig("share_issued.png", bbox_inches="tight")
+        return "The share issued chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_net_debt(ticker):
+    try:
+        data = yf.Ticker(ticker).balance_sheet
+        net_debt = data.loc["Net Debt"]
+        if not net_debt.empty:
+            plt.figure(figsize=(10, 6))
+            net_debt.plot(kind="bar")
+            plt.title(f"{ticker} Net Debt")
+            plt.xlabel("Date")
+            plt.ylabel("Net Debt (in USD)")
+            plt.savefig("net_debt.png", bbox_inches="tight")
+        return "The net debt chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_total_debt(ticker):
+    try:
+        data = yf.Ticker(ticker).balance_sheet
+        total_debt = data.loc["Total Debt"]
+        if not total_debt.empty:
+            plt.figure(figsize=(10, 6))
+            total_debt.plot(kind="bar")
+            plt.title(f"{ticker} Total Debt")
+            plt.xlabel("Date")
+            plt.ylabel("Total Debt (in USD)")
+            plt.savefig("total_debt.png", bbox_inches="tight")
+        return "The total debt chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_tangible_book_value(ticker):
+    try:
+        data = yf.Ticker(ticker).balance_sheet
+        tangible_book_value = data.loc["Tangible Book Value"]
+        if not tangible_book_value.empty:
+            plt.figure(figsize=(10, 6))
+            tangible_book_value.plot(kind="bar")
+            plt.title(f"{ticker} Tangible Book Value")
+            plt.xlabel("Date")
+            plt.ylabel("Tangible Book Value (in USD)")
+            plt.savefig("tangible_book_value.png", bbox_inches="tight")
+        return "The tangible book value chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_invested_capital(ticker):
+    try:
+        data = yf.Ticker(ticker).balance_sheet
+        invested_capital = data.loc["Invested Capital"]
+        if not invested_capital.empty:
+            plt.figure(figsize=(10, 6))
+            invested_capital.plot(kind="bar")
+            plt.title(f"{ticker} Invested Capital")
+            plt.xlabel("Date")
+            plt.ylabel("Invested Capital (in USD)")
+            plt.savefig("invested_capital.png", bbox_inches="tight")
+        return "The invested capital chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_working_capital(ticker):
+    try:
+        data = yf.Ticker(ticker).balance_sheet
+        working_capital = data.loc["Working Capital"]
+        if not working_capital.empty:
+            plt.figure(figsize=(10, 6))
+            working_capital.plot(kind="bar")
+            plt.title(f"{ticker} Working Capital")
+            plt.xlabel("Date")
+            plt.ylabel("Working Capital (in USD)")
+            plt.savefig("working_capital.png", bbox_inches="tight")
+        return "The working capital chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_net_tangible_assets(ticker):
+    try:
+        data = yf.Ticker(ticker).balance_sheet
+        net_tangible_assets = data.loc["Net Tangible Assets"]
+        if not net_tangible_assets.empty:
+            plt.figure(figsize=(10, 6))
+            net_tangible_assets.plot(kind="bar")
+            plt.title(f"{ticker} Net Tangible Assets")
+            plt.xlabel("Date")
+            plt.ylabel("Net Tangible Assets (in USD)")
+            plt.savefig("net_tangible_assets.png", bbox_inches="tight")
+        return "The net tangible assets chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_capital_lease_obligations(ticker):
+    try:
+        data = yf.Ticker(ticker).balance_sheet
+        capital_lease_obligations = data.loc["Capital Lease Obligations"]
+        if not capital_lease_obligations.empty:
+            plt.figure(figsize=(10, 6))
+            capital_lease_obligations.plot(kind="bar")
+            plt.title(f"{ticker} Capital Lease Obligations")
+            plt.xlabel("Date")
+            plt.ylabel("Capital Lease Obligations (in USD)")
+            plt.savefig("capital_lease_obligations.png", bbox_inches="tight")
+        return "The capital lease obligations chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_free_cash_flow(ticker, period="annual"):
+    try:
+        data = yf.Ticker(ticker).cashflow.T
+        if data.empty or "Free Cash Flow" not in data.columns:
+            return "Unable to fetch Free Cash Flow data for the given ticker symbol."
+
+        free_cash_flow_data = data["Free Cash Flow"]
+        if period == "annual":
+            summary = free_cash_flow_data.head(10)
+        else:
+            summary = free_cash_flow_data.resample("QE").sum().head(10)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(summary.index, summary.values, marker="o")
+        plt.title(f"Free Cash Flow for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Free Cash Flow")
+        plt.grid(True)
+        plt.savefig("free_cash_flow.png")
+        return "The Free Cash Flow chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_repurchase_of_capital_stock(ticker, period="annual"):
+    try:
+        data = yf.Ticker(ticker).cashflow.T
+        if data.empty or "Repurchase of Capital Stock" not in data.columns:
+            return "Unable to fetch Repurchase of Capital Stock data for the given ticker symbol."
+
+        repurchase_data = data["Repurchase of Capital Stock"]
+        if period == "annual":
+            summary = repurchase_data.head(10)
+        else:
+            summary = repurchase_data.resample("Q").sum().head(10)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(summary.index, summary.values, marker="o")
+        plt.title(f"Repurchase of Capital Stock for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Repurchase of Capital Stock")
+        plt.grid(True)
+        plt.savefig("repurchase_of_capital_stock.png")
+        return "The Repurchase of Capital Stock chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_repayment_of_debt(ticker, period="annual"):
+    try:
+        data = yf.Ticker(ticker).cashflow.T
+        if data.empty or "Repayment of Debt" not in data.columns:
+            return "Unable to fetch Repayment of Debt data for the given ticker symbol."
+
+        repayment_data = data["Repayment of Debt"]
+        if period == "annual":
+            summary = repayment_data.head(10)
+        else:
+            summary = repayment_data.resample("Q").sum().head(10)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(summary.index, summary.values, marker="o")
+        plt.title(f"Repayment of Debt for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Repayment of Debt")
+        plt.grid(True)
+        plt.savefig("repayment_of_debt.png")
+        return "The Repayment of Debt chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_issuance_of_debt(ticker, period="annual"):
+    try:
+        data = yf.Ticker(ticker).cashflow.T
+        if data.empty or "Issuance of Debt" not in data.columns:
+            return "Unable to fetch Issuance of Debt data for the given ticker symbol."
+
+        issuance_data = data["Issuance of Debt"]
+        if period == "annual":
+            summary = issuance_data.head(10)
+        else:
+            summary = issuance_data.resample("Q").sum().head(10)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(summary.index, summary.values, marker="o")
+        plt.title(f"Issuance of Debt for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Issuance of Debt")
+        plt.grid(True)
+        plt.savefig("issuance_of_debt.png")
+        return "The Issuance of Debt chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_capital_expenditure(ticker, period="annual"):
+    try:
+        data = yf.Ticker(ticker).cashflow.T
+        if data.empty or "Capital Expenditure" not in data.columns:
+            return (
+                "Unable to fetch Capital Expenditure data for the given ticker symbol."
+            )
+
+        capex_data = data["Capital Expenditure"]
+        if period == "annual":
+            summary = capex_data.head(10)
+        else:
+            summary = capex_data.resample("Q").sum().head(10)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(summary.index, summary.values, marker="o")
+        plt.title(f"Capital Expenditure for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Capital Expenditure")
+        plt.grid(True)
+        plt.savefig("capital_expenditure.png")
+        return "The Capital Expenditure chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_interest_paid(ticker, period="annual"):
+    try:
+        data = yf.Ticker(ticker).cashflow.T
+        if data.empty or "Interest Paid" not in data.columns:
+            return "Unable to fetch Interest Paid data for the given ticker symbol."
+
+        interest_paid_data = data["Interest Paid"]
+        if period == "annual":
+            summary = interest_paid_data.head(10)
+        else:
+            summary = interest_paid_data.resample("Q").sum().head(10)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(summary.index, summary.values, marker="o")
+        plt.title(f"Interest Paid for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Interest Paid")
+        plt.grid(True)
+        plt.savefig("interest_paid.png")
+        return "The Interest Paid chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_income_tax_paid(ticker, period="annual"):
+    try:
+        data = yf.Ticker(ticker).cashflow.T
+        if data.empty or "Income Tax Paid" not in data.columns:
+            return "Unable to fetch Income Tax Paid data for the given ticker symbol."
+
+        income_tax_paid_data = data["Income Tax Paid"]
+        if period == "annual":
+            summary = income_tax_paid_data.head(10)
+        else:
+            summary = income_tax_paid_data.resample("Q").sum().head(10)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(summary.index, summary.values, marker="o")
+        plt.title(f"Income Tax Paid for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Income Tax Paid")
+        plt.grid(True)
+        plt.savefig("income_tax_paid.png")
+        return "The Income Tax Paid chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_ending_cash_position(ticker, period="annual"):
+    try:
+        data = yf.Ticker(ticker).cashflow.T
+        if data.empty or "Cash Position" not in data.columns:
+            return (
+                "Unable to fetch Ending Cash Position data for the given ticker symbol."
+            )
+
+        ending_cash_position_data = data["Cash Position"]
+        if period == "annual":
+            summary = ending_cash_position_data.head(10)
+        else:
+            summary = ending_cash_position_data.resample("Q").sum().head(10)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(summary.index, summary.values, marker="o")
+        plt.title(f"Ending Cash Position for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Ending Cash Position")
+        plt.grid(True)
+        plt.savefig("ending_cash_position.png")
+        return "The Ending Cash Position chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_beginning_cash_position(ticker, period="annual"):
+    try:
+        data = yf.Ticker(ticker).cashflow.T
+        if data.empty or "Beginning Cash Position" not in data.columns:
+            return "Unable to fetch Beginning Cash Position data for the given ticker symbol."
+
+        beginning_cash_position_data = data["Beginning Cash Position"]
+        if period == "annual":
+            summary = beginning_cash_position_data.head(10)
+        else:
+            summary = beginning_cash_position_data.resample("Q").sum().head(10)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(summary.index, summary.values, marker="o")
+        plt.title(f"Beginning Cash Position for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Beginning Cash Position")
+        plt.grid(True)
+        plt.savefig("beginning_cash_position.png")
+        return "The Beginning Cash Position chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_change_in_cash(ticker, period="annual"):
+    try:
+        data = yf.Ticker(ticker).cashflow.T
+        if data.empty or "Change in Cash" not in data.columns:
+            return "Unable to fetch Change in Cash data for the given ticker symbol."
+
+        change_in_cash_data = data["Change in Cash"]
+        if period == "annual":
+            summary = change_in_cash_data.head(10)
+        else:
+            summary = change_in_cash_data.resample("Q").sum().head(10)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(summary.index, summary.values, marker="o")
+        plt.title(f"Change in Cash for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Change in Cash")
+        plt.grid(True)
+        plt.savefig("change_in_cash.png")
+        return "The Change in Cash chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_ebitda(ticker, period="5y"):
+    try:
+        data = yf.Ticker(ticker).financials.loc["EBITDA"]
+        data = data[data.index.str.contains(period)]
+
+        if data.empty:
+            return "No data available for the given period."
+
+        plt.figure(figsize=(10, 6))
+        data.plot(kind="bar")
+        plt.title(f"EBITDA for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("EBITDA")
+        plt.savefig("ebitda.png", bbox_inches="tight")
+        return "The EBITDA chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_ebit(ticker, period="5y"):
+    try:
+        data = yf.Ticker(ticker).financials.loc["EBIT"]
+        data = data[data.index.str.contains(period)]
+
+        if data.empty:
+            return "No data available for the given period."
+
+        plt.figure(figsize=(10, 6))
+        data.plot(kind="bar")
+        plt.title(f"EBIT for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("EBIT")
+        plt.savefig("ebit.png", bbox_inches="tight")
+        return "The EBIT chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_net_income_from_continuing_operations_net_minority_interest(
+    ticker, period="5y"
+):
+    try:
+        data = yf.Ticker(ticker).financials.loc[
+            "Net Income from Continuing Operations Net Minority Interest"
+        ]
+        data = data[data.index.str.contains(period)]
+
+        if data.empty:
+            return "No data available for the given period."
+
+        plt.figure(figsize=(10, 6))
+        data.plot(kind="bar")
+        plt.title(
+            f"Net Income from Continuing Operations Net Minority Interest for {ticker}"
+        )
+        plt.xlabel("Date")
+        plt.ylabel("Net Income")
+        plt.savefig(
+            "net_income_from_continuing_operations_net_minority_interest.png",
+            bbox_inches="tight",
+        )
+        return "The Net Income from Continuing Operations Net Minority Interest chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_depreciation(ticker, period="5y"):
+    try:
+        data = yf.Ticker(ticker).financials.loc["Depreciation"]
+        data = data[data.index.str.contains(period)]
+
+        if data.empty:
+            return "No data available for the given period."
+
+        plt.figure(figsize=(10, 6))
+        data.plot(kind="bar")
+        plt.title(f"Depreciation for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Depreciation")
+        plt.savefig("depreciation.png", bbox_inches="tight")
+        return "The Depreciation chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_cost_of_revenue(ticker, period="5y"):
+    try:
+        data = yf.Ticker(ticker).financials.loc["Cost Of Revenue"]
+        data = data[data.index.str.contains(period)]
+
+        if data.empty:
+            return "No data available for the given period."
+
+        plt.figure(figsize=(10, 6))
+        data.plot(kind="bar")
+        plt.title(f"Cost Of Revenue for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Cost Of Revenue")
+        plt.savefig("cost_of_revenue.png", bbox_inches="tight")
+        plt.close()
+        return "The Cost Of Revenue chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_tax_effect_of_unusual_items(ticker, period="5y"):
+    try:
+        data = yf.Ticker(ticker).financials.loc["Tax Effect of Unusual Items"]
+        data = data[data.index.str.contains(period)]
+
+        if data.empty:
+            return "No data available for the given period."
+
+        plt.figure(figsize=(10, 6))
+        data.plot(kind="bar")
+        plt.title(f"Tax Effect of Unusual Items for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Tax Effect of Unusual Items")
+        plt.savefig("tax_effect_of_unusual_items.png", bbox_inches="tight")
+        return "The Tax Effect of Unusual Items chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_total_unusual_items(ticker, period="5y"):
+    try:
+        data = yf.Ticker(ticker).financials.loc["Total Unusual Items"]
+        data = data[data.index.str.contains(period)]
+
+        if data.empty:
+            return "No data available for the given period."
+
+        plt.figure(figsize=(10, 6))
+        data.plot(kind="bar")
+        plt.title(f"Total Unusual Items for {ticker}")
+        plt.xlabel("Date")
+        plt.ylabel("Total Unusual Items")
+        plt.savefig("total_unusual_items.png", bbox_inches="tight")
+        return "The Total Unusual Items chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def plot_two_shares_side_by_side(ticker1, ticker2, start_date, end_date, interval="1d"):
+    try:
+        # Download stock data
+        data1 = yf.download(ticker1, start=start_date, end=end_date, interval=interval)
+        data2 = yf.download(ticker2, start=start_date, end=end_date, interval=interval)
+
+        # Check if data is available
+        if data1.empty or data2.empty:
+            return "No data available for the given tickers and period."
+
+        # Align the data by date
+        data1 = data1["Close"]
+        data2 = data2["Close"]
+        combined_data = data1.to_frame(name=ticker1).join(
+            data2.to_frame(name=ticker2), how="inner"
+        )
+
+        # Handle missing data by forward filling
+        combined_data = combined_data.ffill()
+
+        # Normalize the prices to a common starting point for comparison
+        combined_data[ticker1] = (
+            combined_data[ticker1] / combined_data[ticker1].iloc[0] * 100
+        )
+        combined_data[ticker2] = (
+            combined_data[ticker2] / combined_data[ticker2].iloc[0] * 100
+        )
+
+        # Plotting
+        plt.figure(figsize=(14, 7))
+        plt.plot(combined_data[ticker1], label=ticker1, color="blue")
+        plt.plot(combined_data[ticker2], label=ticker2, color="red")
+
+        plt.title(f"Stock Prices: {ticker1} vs {ticker2}")
+        plt.xlabel("Date")
+        plt.ylabel("Normalized Stock Price")
+        plt.legend()
+        plt.grid(True)
+        plt.savefig("comparison_chart.png", bbox_inches="tight")
+        return "The comparison chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+sector_to_companies = {
+    "it": ["AAPL", "MSFT", "GOOGL"],
+    "medical": ["JNJ", "PFE", "MRK"],
+    "finance": ["JPM", "BAC", "C"],
+    "consumer_discretionary": ["AMZN", "TSLA", "HD"],
+    "utilities": ["DUK", "SO", "NEE"],
+    "energy": ["XOM", "CVX", "SLB"],
+    "consumer_staples": ["PG", "KO", "PEP"],
+    "industrials": ["BA", "CAT", "GE"],
+    "telecommunication": ["VZ", "T", "TMUS"],
+    "real_estate": ["O", "SPG", "PLD"],
+}
+
+
+def plot_companies_in_sector(sector, start_date, end_date, interval="1d"):
+    try:
+        # Check if the sector exists in the mapping
+        if sector.lower() not in sector_to_companies:
+            return f"Sector '{sector}' not found in the available sectors."
+
+        companies = sector_to_companies[sector.lower()]
+
+        plt.figure(figsize=(14, 7))
+
+        for company in companies:
+            # Download stock data
+            data = yf.download(
+                company, start=start_date, end=end_date, interval=interval
+            )
+
+            if data.empty:
+                continue
+
+            # Align data by date and forward fill missing data
+            data = data["Close"].ffill()
+
+            # Normalize the prices to a common starting point for comparison
+            normalized_data = data / data.iloc[0] * 100
+
+            # Plot the data
+            plt.plot(normalized_data, label=company)
+
+        plt.title(f"Stock Prices for Companies in the {sector.capitalize()} Sector")
+        plt.xlabel("Date")
+        plt.ylabel("Normalized Stock Price")
+        plt.legend()
+        plt.grid(True)
+        plt.savefig("sector_comparison_chart.png", bbox_inches="tight")
+        return "The sector comparison chart has been generated."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
 
 
 functions = [
@@ -1708,36 +2365,6 @@ functions = [
                     "type": "string",
                     "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
                 }
-            },
-            "required": ["ticker"],
-        },
-    },
-    {
-        "name": "plot_stock_price",
-        "description": "Generate a stock price chart for a given ticker symbol.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "ticker": {
-                    "type": "string",
-                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
-                },
-                "period": {
-                    "type": "integer",
-                    "description": "The number of years to plot (e.g., 3 for 3 years)",
-                },
-                "year": {
-                    "type": "integer",
-                    "description": "The specific year to plot (e.g., 2022 for the year 2022)",
-                },
-                "start_year": {
-                    "type": "integer",
-                    "description": "The start year to plot (e.g., 2020)",
-                },
-                "end_year": {
-                    "type": "integer",
-                    "description": "The end year to plot (e.g., 2023)",
-                },
             },
             "required": ["ticker"],
         },
@@ -2200,7 +2827,7 @@ functions = [
             "properties": {
                 "ticker": {
                     "type": "string",
-                    "description": "The stock ticker symbol for a company (for example AAPL for Apple).",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple).",
                 }
             },
             "required": ["ticker"],
@@ -2388,9 +3015,529 @@ functions = [
             "required": ["ticker"],
         },
     },
+    {
+        "name": "plot_stock_price",
+        "description": "Generate a stock price chart for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "integer",
+                    "description": "The number of years to plot (e.g., 3 for 3 years)",
+                },
+                "year": {
+                    "type": "integer",
+                    "description": "The specific year to plot (e.g., 2022 for the year 2022)",
+                },
+                "start_year": {
+                    "type": "integer",
+                    "description": "The start year to plot (e.g., 2020)",
+                },
+                "end_year": {
+                    "type": "integer",
+                    "description": "The end year to plot (e.g., 2023)",
+                },
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_ordinary_shares_number",
+        "description": "Plot the ordinary shares number for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                }
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_share_issued",
+        "description": "Generate a chart of the shares issued for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                }
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_net_debt",
+        "description": "Generate a chart of the net debt for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                }
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_total_debt",
+        "description": "Generate a chart of the total debt for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                }
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_tangible_book_value",
+        "description": "Generate a chart of the tangible book value for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                }
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_invested_capital",
+        "description": "Generate a chart of the invested capital for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                }
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_working_capital",
+        "description": "Generate a chart of the working capital for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                }
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_net_tangible_assets",
+        "description": "Generate a chart of the net tangible assets for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                }
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_capital_lease_obligations",
+        "description": "Generate a chart of the capital lease obligations for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                }
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_free_cash_flow",
+        "description": "Generate a Free Cash Flow chart for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period for the data (e.g., 'annual' or 'quarterly')",
+                },
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_repurchase_of_capital_stock",
+        "description": "Generate a Repurchase of Capital Stock chart for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period for the data (e.g., 'annual' or 'quarterly')",
+                },
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_repayment_of_debt",
+        "description": "Generate a Repayment of Debt chart for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period for the data (e.g., 'annual' or 'quarterly')",
+                },
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_issuance_of_debt",
+        "description": "Generate an Issuance of Debt chart for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period for the data (e.g., 'annual' or 'quarterly')",
+                },
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_capital_expenditure",
+        "description": "Generate a Capital Expenditure chart for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period for the data (e.g., 'annual' or 'quarterly')",
+                },
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_interest_paid",
+        "description": "Generate an Interest Paid chart for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period for the data (e.g., 'annual' or 'quarterly')",
+                },
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_income_tax_paid",
+        "description": "Generate an Income Tax Paid chart for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period for the data (e.g., 'annual' or 'quarterly')",
+                },
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_ending_cash_position",
+        "description": "Generate an Ending Cash Position chart for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period for the data (e.g., 'annual' or 'quarterly')",
+                },
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_beginning_cash_position",
+        "description": "Generate a Beginning Cash Position chart for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period for the data (e.g., 'annual' or 'quarterly')",
+                },
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_change_in_cash",
+        "description": "Generate a Change in Cash chart for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period for the data (e.g., 'annual' or 'quarterly')",
+                },
+            },
+            "required": ["ticker"],
+        },
+    },
+    {
+        "name": "plot_ebitda",
+        "description": "Generate a chart for EBITDA for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period to plot (e.g., '5y' for 5 years)",
+                },
+            },
+            "required": ["ticker", "period"],
+        },
+    },
+    {
+        "name": "plot_ebit",
+        "description": "Generate a chart for EBIT for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period to plot (e.g., '5y' for 5 years)",
+                },
+            },
+            "required": ["ticker", "period"],
+        },
+    },
+    {
+        "name": "plot_net_income_from_continuing_operations_net_minority_interest",
+        "description": "Generate a chart for Net Income from Continuing Operations Net Minority Interest for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period to plot (e.g., '5y' for 5 years)",
+                },
+            },
+            "required": ["ticker", "period"],
+        },
+    },
+    {
+        "name": "plot_depreciation",
+        "description": "Generate a chart for Depreciation for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period to plot (e.g., '5y' for 5 years)",
+                },
+            },
+            "required": ["ticker", "period"],
+        },
+    },
+    {
+        "name": "plot_cost_of_revenue",
+        "description": "Generate a chart for Cost Of Revenue for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period to plot (e.g., '5y' for 5 years)",
+                },
+            },
+            "required": ["ticker", "period"],
+        },
+    },
+    {
+        "name": "plot_tax_effect_of_unusual_items",
+        "description": "Generate a chart for Tax Effect of Unusual Items for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period to plot (e.g., '5y' for 5 years)",
+                },
+            },
+            "required": ["ticker", "period"],
+        },
+    },
+    {
+        "name": "plot_total_unusual_items",
+        "description": "Generate a chart for Total Unusual Items for a given ticker symbol.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for a company (e.g., AAPL for Apple)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "The period to plot (e.g., '5y' for 5 years)",
+                },
+            },
+            "required": ["ticker", "period"],
+        },
+    },
+    {
+        "name": "plot_two_shares_side_by_side",
+        "description": "Generate a line chart for two given ticker symbols to compare their stock prices over various timelines.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker1": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for the first company (e.g., AAPL for Apple)",
+                },
+                "ticker2": {
+                    "type": "string",
+                    "description": "The stock ticker symbol for the second company (e.g., MSFT for Microsoft)",
+                },
+                "start_date": {
+                    "type": "string",
+                    "description": "The start date for the data (e.g., '2020-01-01')",
+                },
+                "end_date": {
+                    "type": "string",
+                    "description": "The end date for the data (e.g., '2023-12-31')",
+                },
+                "interval": {
+                    "type": "string",
+                    "description": "The interval for the data (e.g., '1d', '1wk', '1mo')",
+                },
+            },
+            "required": ["ticker1", "ticker2", "start_date", "end_date", "interval"],
+        },
+    },
+    {
+        "name": "plot_companies_in_sector",
+        "description": "Generate a comparison chart for the stock prices of companies within a specified sector.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "sector": {
+                    "type": "string",
+                    "description": "The sector name (e.g., 'it', 'medical')",
+                },
+                "start_date": {
+                    "type": "string",
+                    "description": "The start date for the data (e.g., '2020-01-01')",
+                },
+                "end_date": {
+                    "type": "string",
+                    "description": "The end date for the data (e.g., '2023-12-31')",
+                },
+                "interval": {
+                    "type": "string",
+                    "description": "The data interval (e.g., '1d' for daily, '1wk' for weekly, '1mo' for monthly). Default is '1d'.",
+                    "default": "1d",
+                },
+            },
+            "required": ["sector", "start_date", "end_date"],
+        },
+    },
 ]
 
 available_functions = {
+    "get_nse_ticker": get_nse_ticker,
     "get_stock_price": get_stock_price,
     "calculate_SMA": calculate_SMA,
     "calculate_EMA": calculate_EMA,
@@ -2413,7 +3560,6 @@ available_functions = {
     "get_stock_trend": get_stock_trend,
     "check_head_shoulders_pattern": check_head_shoulders_pattern,
     "plot_stock_with_macd": plot_stock_with_macd,
-    #    'get_latest_market_news': get_latest_market_news,
     "compare_valuations": compare_valuations,
     "compare_stocks": compare_stocks,
     "get_top_sector_stocks": get_top_sector_stocks,
@@ -2450,6 +3596,34 @@ available_functions = {
     "get_news": get_news,
     "get_recent_actions": get_recent_actions,
     "get_stock_split": get_stock_split,
+    "plot_bar_chart": plot_bar_chart,
+    "plot_ordinary_shares_number": plot_ordinary_shares_number,
+    "plot_share_issued": plot_share_issued,
+    "plot_net_debt": plot_net_debt,
+    "plot_total_debt": plot_total_debt,
+    "plot_tangible_book_value": plot_tangible_book_value,
+    "plot_invested_capital": plot_invested_capital,
+    "plot_working_capital": plot_working_capital,
+    "plot_net_tangible_assets": plot_net_tangible_assets,
+    "plot_capital_lease_obligations": plot_capital_lease_obligations,
+    "plot_free_cash_flow": plot_free_cash_flow,
+    "plot_repayment_of_debt": plot_repayment_of_debt,
+    "plot_issuance_of_debt": plot_issuance_of_debt,
+    "plot_capital_expenditure": plot_capital_expenditure,
+    "plot_interest_paid": plot_interest_paid,
+    "plot_income_tax_paid": plot_income_tax_paid,
+    "plot_ending_cash_position": plot_ending_cash_position,
+    "plot_beginning_cash_position": plot_beginning_cash_position,
+    "plot_change_in_cash": plot_change_in_cash,
+    "plot_ebitda": plot_ebitda,
+    "plot_ebit": plot_ebit,
+    "plot_net_income_from_continuing_operations_net_minority_interest": plot_net_income_from_continuing_operations_net_minority_interest,
+    "plot_depreciation": plot_depreciation,
+    "plot_cost_of_revenue": plot_cost_of_revenue,
+    "plot_tax_effect_of_unusual_items": plot_tax_effect_of_unusual_items,
+    "plot_total_unusual_items": plot_total_unusual_items,
+    "plot_two_shares_side_by_side": plot_two_shares_side_by_side,
+    "plot_companies_in_sector": plot_companies_in_sector,
 }
 
 
@@ -2457,7 +3631,7 @@ def get_response(query, chat_history):
     st.session_state["messages"] = [
         {
             "role": "system",
-            "content": "You are a helpful financial advisor named prabot, that explains concepts in an easy-to-understand way.",
+            "content": "You are a helpful financial advisor named prabot, that explains concepts in an easy-to-understand way. You can also help in executing python programs related to finance calculations and also show the steps inside proper expression box.",
         }
     ]
     st.session_state["messages"].extend(
@@ -2479,7 +3653,7 @@ def get_response(query, chat_history):
             )
 
             response = openai.chat.completions.create(
-                model="gpt-3.5-turbo-0613",
+                model="gpt-4o",
                 messages=st.session_state["messages"],
                 functions=functions,
                 function_call="auto",
@@ -2508,8 +3682,196 @@ def get_response(query, chat_history):
                         "end_year": function_args.get("end_year"),
                     }
                     function_response = function_to_call(**args_dict)
-                    st.image("stock.png")  # Display the textual response
-                    # No need to try displaying an image anymore
+                    st.image("stock.png")
+                elif function_name == "plot_ordinary_shares_number":
+                    args_dict = {"ticker": function_args.get("ticker")}
+                    function_response = plot_ordinary_shares_number(**args_dict)
+                    st.image("ordinary_shares_number.png")
+                elif function_name == "plot_share_issued":
+                    args_dict = {"ticker": function_args.get("ticker")}
+                    function_response = plot_share_issued(**args_dict)
+                    st.image("share_issued.png")
+                elif function_name == "plot_net_debt":
+                    args_dict = {"ticker": function_args.get("ticker")}
+                    function_response = plot_net_debt(**args_dict)
+                    st.image("net_debt.png")
+                elif function_name == "plot_total_debt":
+                    args_dict = {"ticker": function_args.get("ticker")}
+                    function_response = plot_total_debt(**args_dict)
+                    st.image("total_debt.png")
+                elif function_name == "plot_tangible_book_value":
+                    args_dict = {"ticker": function_args.get("ticker")}
+                    function_response = plot_tangible_book_value(**args_dict)
+                    st.image("tangible_book_value.png")
+                elif function_name == "plot_invested_capital":
+                    args_dict = {"ticker": function_args.get("ticker")}
+                    function_response = plot_invested_capital(**args_dict)
+                    st.image("invested_capital.png")
+                elif function_name == "plot_working_capital":
+                    args_dict = {"ticker": function_args.get("ticker")}
+                    function_response = plot_working_capital(**args_dict)
+                    st.image("working_capital.png")
+                elif function_name == "plot_net_tangible_assets":
+                    args_dict = {"ticker": function_args.get("ticker")}
+                    function_response = plot_net_tangible_assets(**args_dict)
+                    st.image("net_tangible_assets.png")
+                elif function_name == "plot_capital_lease_obligations":
+                    args_dict = {"ticker": function_args.get("ticker")}
+                    function_response = plot_capital_lease_obligations(**args_dict)
+                    st.image("capital_lease_obligations.png")
+                elif function_name == "plot_free_cash_flow":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("free_cash_flow.png")
+                elif function_name == "plot_repurchase_of_capital_stock":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("repurchase_of_capital_stock.png")
+                elif function_name == "plot_repayment_of_debt":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("repayment_of_debt.png")
+                elif function_name == "plot_issuance_of_debt":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("issuance_of_debt.png")
+                elif function_name == "plot_capital_expenditure":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("capital_expenditure.png")
+                elif function_name == "plot_interest_paid":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("interest_paid.png")
+                elif function_name == "plot_income_tax_paid":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("income_tax_paid.png")
+                elif function_name == "plot_ending_cash_position":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("ending_cash_position.png")
+                elif function_name == "plot_beginning_cash_position":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("beginning_cash_position.png")
+                elif function_name == "plot_change_in_cash":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("change_in_cash.png")
+                elif function_name == "plot_ebitda":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("ebitda.png")
+                elif function_name == "plot_ebit":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("ebit.png")
+                elif (
+                    function_name
+                    == "plot_net_income_from_continuing_operations_net_minority_interest"
+                ):
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image(
+                        "net_income_from_continuing_operations_net_minority_interest.png"
+                    )
+                elif function_name == "plot_depreciation":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("depreciation.png")
+                # elif function_name == "plot_cost_of_revenue":
+                # args_dict = {
+                # "ticker": function_args.get("ticker"),
+                # "period": function_args.get("period"),
+                # }
+                # function_response = plot_cost_of_revenue(**args_dict)
+                # st.image("cost_of_revenue.png")
+                elif function_name == "plot_cost_of_revenue":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    if os.path.exists("cost_of_revenue.png"):
+                        st.image("cost_of_revenue.png")
+                    else:
+                        st.error("The cost_of_revenue.png file was not found.")
+                elif function_name == "plot_tax_effect_of_unusual_items":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("tax_effect_of_unusual_items.png")
+                elif function_name == "plot_total_unusual_items":
+                    args_dict = {
+                        "ticker": function_args.get("ticker"),
+                        "period": function_args.get("period"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("total_unusual_items.png")
+                elif function_name == "plot_two_shares_side_by_side":
+                    args_dict = {
+                        "ticker1": function_args.get("ticker1"),
+                        "ticker2": function_args.get("ticker2"),
+                        "start_date": function_args.get("start_date"),
+                        "end_date": function_args.get("end_date"),
+                        "interval": function_args.get("interval"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("two_shares_side_by_side.png")
+                elif function_name == "plot_companies_in_sector":
+                    args_dict = {
+                        "sector": function_args.get("sector"),
+                        "start_date": function_args.get("start_date"),
+                        "end_date": function_args.get("end_date"),
+                        "interval": function_args.get("interval", "1d"),
+                    }
+                    function_response = function_to_call(**args_dict)
+                    st.image("sector_comparison_chart.png")
                 else:
                     if function_name in [
                         "get_stock_price",
@@ -2558,11 +3920,6 @@ def get_response(query, chat_history):
                         args_dict = {"ticker": function_args.get("ticker")}
                     elif function_name == "check_head_shoulders_pattern":
                         args_dict = {"ticker": function_args.get("ticker")}
-                    # elif function_name == 'get_latest_market_news':
-                    #    function_response = function_to_call()
-                    #    st.write(function_response)
-                    #    return st.session_state['messages']
-                    elif function_name == "compare_valuations":
                         args_dict = {
                             "ticker1": function_args.get("ticker1"),
                             "ticker2": function_args.get("ticker2"),
@@ -2591,18 +3948,6 @@ def get_response(query, chat_history):
                             "top_n": function_args.get("top_n", 5),
                         }
                         function_response = function_to_call(**args_dict)
-                    #                    elif function_name == 'display_portfolio':
-                    #                        args_dict = {}  # No arguments needed
-                    #                        function_response = function_to_call()
-                    #                    elif function_name == 'manage_portfolio':
-                    #                        args_dict = {
-                    #                            'action': function_args.get('action'),
-                    #                            'ticker': function_args.get('ticker')
-                    #                        }
-                    #                    elif function_name in ['get_portfolio_performance', 'get_best_performing_stock']:
-                    #                        args_dict = {}
-                    #                    elif function_name == 'analyze_portfolio_performance':
-                    #                        args_dict = {}
                     elif function_name == "manage_portfolio":
                         args_dict = {
                             "action": function_args.get("action"),
@@ -2643,13 +3988,13 @@ def get_response(query, chat_history):
                     elif function_name == "get_company_news":
                         args_dict = {"ticker": function_args.get("ticker")}
                         function_response = function_to_call(**args_dict)
-                        # st.write(function_response)
                     elif function_name in [
                         "get_income_statement",
                         "get_balance_sheet",
                         "get_cash_flow",
                     ]:
                         args_dict = {"ticker": function_args.get("ticker")}
+                        function_response = function_to_call(**args_dict)
                     elif function_name in [
                         "get_major_holders",
                         "get_institutional_holders",
@@ -2675,7 +4020,6 @@ def get_response(query, chat_history):
                     elif function_name == "get_stock_split":
                         args_dict = {"ticker": function_args.get("ticker")}
                     else:
-                        # Handle any other functions or unknown functions
                         args_dict = function_args
 
                     function_response = function_to_call(**args_dict)
@@ -2688,7 +4032,7 @@ def get_response(query, chat_history):
                         }
                     )
                     second_response = openai.chat.completions.create(
-                        model="gpt-3.5-turbo-0613",
+                        model="gpt-4o",
                         messages=st.session_state["messages"],
                     )
                     response_text = second_response.choices[0].message.content
