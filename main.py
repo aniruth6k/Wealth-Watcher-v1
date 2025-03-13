@@ -8,8 +8,8 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 import yfinance as yf
-from datetime import datetime
 import matplotlib.pyplot as plt
+from datetime import datetime
 import newsapi
 from newsapi import NewsApiClient
 import re
@@ -19,6 +19,29 @@ load_dotenv()
 
 st.set_page_config(page_title="Wealth Watcher", page_icon=":chart_with_upwards_trend:")
 st.title("Wealth Watcher")
+
+st.markdown(
+    """
+    <style>
+    .reportview-container {
+        margin-top: -2em;
+    }
+    #MainMenu {
+        visibility: hidden;
+    }
+    .stDeployButton {
+        display:none;
+    }
+    footer {
+        visibility: hidden;
+    }
+    #stDecoration {
+        display:none;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
@@ -772,208 +795,6 @@ def get_potential_growth_stocks(industry, top_n=5):
     return top_stocks
 
 
-# def manage_portfolio(action, ticker=None, shares=1):
-#    if 'portfolio' not in st.session_state:
-#        st.session_state.portfolio = {}
-#
-#    if action == 'add' and ticker:
-#        if ticker in st.session_state.portfolio:
-#            st.session_state.portfolio[ticker] += shares
-#        else:
-#            st.session_state.portfolio[ticker] = shares
-#        return f"{shares} share(s) of {ticker} have been added to your portfolio."
-#    elif action == 'remove' and ticker:
-#        if ticker in st.session_state.portfolio:
-#            if shares >= st.session_state.portfolio[ticker]:
-#                del st.session_state.portfolio[ticker]
-#                return f"All shares of {ticker} have been removed from your portfolio."
-#            else:
-#                st.session_state.portfolio[ticker] -= shares
-#                return f"{shares} share(s) of {ticker} have been removed from your portfolio."
-#        else:
-#            return f"{ticker} is not in your portfolio."
-#    elif action == 'list':
-#        if not st.session_state.portfolio:
-#            return "Your portfolio is empty."
-#        else:
-#            stocks = [f"{ticker} ({shares} share{'s' if shares > 1 else ''})" for ticker, shares in st.session_state.portfolio.items()]
-#            return "Your portfolio contains: " + ", ".join(stocks)
-#    else:
-#        return "Invalid action. Use 'add', 'remove', or 'list'."
-#
-# def display_portfolio():
-#    if 'portfolio' not in st.session_state or not st.session_state.portfolio:
-#        return "Your portfolio is empty. Please add some stocks first."
-#
-#    total_value = 0
-#    portfolio_summary = []
-#
-#    for ticker, shares in st.session_state.portfolio.items():
-#        try:
-#            stock = yf.Ticker(ticker)
-#            data = stock.history(period='1d')
-#            if not data.empty:
-#                current_price = data['Close'].iloc[-1]
-#                stock_value = current_price * shares
-#                total_value += stock_value
-#
-#                # Use the full company name if available, otherwise use the ticker
-#                info = stock.info
-#                company_name = info.get('longName', ticker)
-#
-#                # Create a summary string for each stock
-#                summary = f"{company_name} ({ticker}): {shares} share{'s' if shares > 1 else ''}"
-#                portfolio_summary.append(summary)
-#
-#        except Exception as e:
-#            st.error(f"Error fetching data for {ticker}: {e}")
-#
-#    if portfolio_summary:
-#        # Join all stock summaries with newlines for better readability
-#        portfolio_list = "\n".join(portfolio_summary)
-#        response = f"Your portfolio contains:\n\n{portfolio_list}\n\nTotal Portfolio Value: ${total_value:.2f}"
-#        return response
-#    else:
-#        return "No data available for your portfolio stocks."
-#
-#    if portfolio_data:
-#        df = pd.DataFrame(portfolio_data)
-#        df.set_index('Ticker', inplace=True)
-#        st.table(df)
-#        st.write(f"Total Portfolio Value: ${total_value:.2f}")
-#
-#        # Create a pie chart for sector allocation
-#        plt.figure(figsize=(8, 8))
-#        labels = []
-#        sizes = []
-#        for sector, value in sector_values.items():
-#            labels.append(f"{sector} (${value:.2f})")
-#            sizes.append(value)
-#        plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
-#        plt.title('Portfolio Sector Allocation')
-#        plt.axis('equal')
-#        plt.tight_layout()
-#        plt.savefig('portfolio_allocation.png')
-#        plt.close()
-#
-#        st.image('portfolio_allocation.png')
-#        return "Here's your current portfolio."
-#    else:
-#        return "No data available for your portfolio stocks."
-#
-# def get_portfolio_performance():
-#    if 'portfolio' not in st.session_state or not st.session_state.portfolio:
-#        return "Your portfolio is empty. Please add some stocks first."
-#
-#    total_return = 0
-#    for ticker in st.session_state.portfolio:
-#        data = yf.Ticker(ticker).history(period='1y')
-#        if not data.empty:
-#            start_price = data['Close'].iloc[0]
-#            end_price = data['Close'].iloc[-1]
-#            return_pct = (end_price - start_price) / start_price * 100
-#            total_return += return_pct
-#
-#    avg_return = total_return / len(st.session_state.portfolio)
-#    return f"The overall performance of your portfolio is {avg_return:.2f}% over the past year."
-#
-# def get_best_performing_stock():
-#    if 'portfolio' not in st.session_state or not st.session_state.portfolio:
-#        return "Your portfolio is empty. Please add some stocks first."
-#
-#    best_return = float('-inf')
-#    best_stock = None
-#
-#    for ticker in st.session_state.portfolio:
-#        data = yf.Ticker(ticker).history(period='1y')
-#        if not data.empty:
-#            start_price = data['Close'].iloc[0]
-#            end_price = data['Close'].iloc[-1]
-#            return_pct = (end_price - start_price) / start_price * 100
-#            if return_pct > best_return:
-#                best_return = return_pct
-#                best_stock = ticker
-#
-#    if best_stock:
-#        return f"Your best-performing stock is {best_stock} with a return of {best_return:.2f}% over the past year."
-#    else:
-#        return "Unable to determine the best-performing stock."
-#
-# def analyze_portfolio_performance():
-#    if 'portfolio' not in st.session_state or not st.session_state.portfolio:
-#        return "Your portfolio is empty. Please add some stocks first."
-#
-#    total_current_value = 0
-#    total_initial_value = 0
-#    portfolio_returns = []
-#    sp500_data = yf.Ticker('^GSPC').history(period='1y')
-#    sp500_return = (sp500_data['Close'].iloc[-1] - sp500_data['Close'].iloc[0]) / sp500_data['Close'].iloc[0] * 100
-#
-#    outperforming_stocks = []
-#    underperforming_stocks = []
-#
-#    for ticker, shares in st.session_state.portfolio.items():
-#        try:
-#            stock = yf.Ticker(ticker)
-#            data = stock.history(period='1y')
-#            if not data.empty:
-#                current_price = data['Close'].iloc[-1]
-#                initial_price = data['Close'].iloc[0]
-#                stock_return = (current_price - initial_price) / initial_price * 100
-#
-#                current_value = current_price * shares
-#                initial_value = initial_price * shares
-#
-#                total_current_value += current_value
-#                total_initial_value += initial_value
-#
-#                portfolio_returns.append(stock_return * (initial_value / total_initial_value))
-#
-#                # Compare each stock's performance to S&P 500
-#                if stock_return > sp500_return:
-#                    outperforming_stocks.append((ticker, stock_return))
-#                else:
-#                    underperforming_stocks.append((ticker, stock_return))
-#
-#            else:
-#                st.error(f"No data available for {ticker}")
-#        except Exception as e:
-#            st.error(f"Error fetching data for {ticker}: {e}")
-#
-#    if total_initial_value > 0:
-#        portfolio_return = (total_current_value - total_initial_value) / total_initial_value * 100
-#        weighted_return = sum(portfolio_returns)
-#
-#        outperforming_stocks.sort(key=lambda x: x[1], reverse=True)
-#        underperforming_stocks.sort(key=lambda x: x[1])
-#
-#        response = f"Your portfolio's overall performance:\n\n"
-#        response += f"1. Total Return: {portfolio_return:.2f}%\n"
-#        response += f"   - Started with: ${total_initial_value:.2f}\n"
-#        response += f"   - Currently worth: ${total_current_value:.2f}\n\n"
-#
-#        response += f"2. Benchmark Comparison:\n"
-#        response += f"   - Your portfolio: {portfolio_return:.2f}%\n"
-#        response += f"   - S&P 500: {sp500_return:.2f}%\n"
-#        response += f"   - You are {['underperforming', 'outperforming'][portfolio_return > sp500_return]} the market.\n\n"
-#
-#        response += "3. Stock-by-Stock Performance:\n"
-#        if outperforming_stocks:
-#            response += "   Outperforming the S&P 500:\n"
-#            for ticker, return_pct in outperforming_stocks[:3]:  # Show top 3
-#                response += f"   - {ticker}: {return_pct:.2f}%\n"
-#        if underperforming_stocks:
-#            response += "   Underperforming the S&P 500:\n"
-#            for ticker, return_pct in underperforming_stocks[:3]:  # Show bottom 3
-#                response += f"   - {ticker}: {return_pct:.2f}%\n"
-#
-#        response += "\nNote: Performance is calculated over the past year, assuming you held each stock for the entire period."
-#
-#        return response
-#    else:
-#        return "Unable to calculate portfolio performance. This could be due to insufficient historical data."
-
-
 def initialize_portfolio():
     if "portfolio" not in st.session_state:
         st.session_state.portfolio = {}
@@ -1467,22 +1288,11 @@ def get_balance_sheet(ticker):
         return f"An error occurred: {str(e)}"
 
 
-# def get_cash_flow(ticker):
-# data = yf.Ticker(ticker).cashflow
-# return (
-# data.to_json()
-# if not data.empty
-# else "Unable to fetch cash flow data for the given ticker symbol."
-# )
-
-
 def get_cash_flow(ticker):
     try:
         data = yf.Ticker(ticker).cashflow
         if data.empty:
             return "Unable to fetch cash flow data for the given ticker symbol."
-
-        # Summarize the cash flow data
         summary = data.head(10)  # Limiting to the first 10 rows
         return summary.to_json()
     except Exception as e:
@@ -2571,11 +2381,6 @@ functions = [
             "required": ["ticker"],
         },
     },
-    #    {
-    #        'name': 'get_latest_market_news',
-    #        'description': "Get a summary of the latest news articles affecting the stock market.",
-    #        'parameters': {}
-    #    },
     {
         "name": "compare_valuations",
         "description": "Compare the current market valuations of two companies.",
@@ -2655,50 +2460,6 @@ functions = [
             "required": ["industry"],
         },
     },
-    #    {
-    #        'name': 'manage_portfolio',
-    #        'description': "Manage your stock portfolio by adding or removing stocks.",
-    #        'parameters': {
-    #            'type': 'object',
-    #            'properties': {
-    #                'action': {
-    #                    'type': 'string',
-    #                    'description': "The action to perform: 'add', 'remove', or 'list'.",
-    #                    'enum': ['add', 'remove', 'list']
-    #                },
-    #                'ticker': {
-    #                    'type': 'string',
-    #                    'description': 'The stock ticker symbol to add or remove (e.g., AAPL for Apple). Not needed for "list" action.',
-    #                },
-    #                'shares': {
-    #                    'type': 'integer',
-    #                    'description': 'The number of shares to add or remove. Default is 1.',
-    #                    'default': 1
-    #                }
-    #            },
-    #            'required': ['action'],
-    #        }
-    #    },
-    #    {
-    #        'name': 'display_portfolio',
-    #        'description': "Display the list of company along with the number of stocks in your current stock portfolio.",
-    #        'parameters': {}
-    #    },
-    #    {
-    #        'name': 'get_portfolio_performance',
-    #        'description': "Get the overall performance of your stock portfolio.",
-    #        'parameters': {}
-    #    },
-    #    {
-    #        'name': 'get_best_performing_stock',
-    #        'description': "Identify your best-performing stock in the portfolio.",
-    #        'parameters': {}
-    #    },
-    #    {
-    #        'name': 'analyze_portfolio_performance',
-    #        'description': "Provide a comprehensive analysis of your portfolio's performance over the past year.",
-    #        'parameters': {}
-    #    },
     {
         "name": "manage_portfolio",
         "description": "Manage your stock portfolio by adding or removing stocks.",
@@ -3564,11 +3325,6 @@ available_functions = {
     "compare_stocks": compare_stocks,
     "get_top_sector_stocks": get_top_sector_stocks,
     "get_potential_growth_stocks": get_potential_growth_stocks,
-    #    'manage_portfolio': manage_portfolio,
-    #    'display_portfolio': display_portfolio,
-    #    'get_portfolio_performance': get_portfolio_performance,
-    #    'get_best_performing_stock': get_best_performing_stock,
-    #    'analyze_portfolio_performance': analyze_portfolio_performance,
     "manage_portfolio": manage_portfolio,
     "display_portfolio": display_portfolio,
     "calculate_portfolio_performance": calculate_portfolio_performance,
@@ -3631,7 +3387,7 @@ def get_response(query, chat_history):
     st.session_state["messages"] = [
         {
             "role": "system",
-            "content": "You are a helpful financial advisor named prabot, that explains concepts in an easy-to-understand way. You can also help in executing python programs related to finance calculations and also show the steps inside proper expression box.",
+            "content": "You are a helpful financial advisor, that explains concepts in an easy-to-understand way, and also try to remember what the user has asked you and try to maintain more meaningful conversation.",
         }
     ]
     st.session_state["messages"].extend(
@@ -3822,13 +3578,6 @@ def get_response(query, chat_history):
                     }
                     function_response = function_to_call(**args_dict)
                     st.image("depreciation.png")
-                # elif function_name == "plot_cost_of_revenue":
-                # args_dict = {
-                # "ticker": function_args.get("ticker"),
-                # "period": function_args.get("period"),
-                # }
-                # function_response = plot_cost_of_revenue(**args_dict)
-                # st.image("cost_of_revenue.png")
                 elif function_name == "plot_cost_of_revenue":
                     args_dict = {
                         "ticker": function_args.get("ticker"),
