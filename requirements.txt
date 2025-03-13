@@ -1,9 +1,9 @@
-langchain_core==0.2.5
-langchain_openai==0.1.8
-matplotlib==3.8.4
+langchain_core==0.3.44
+langchain_openai==0.3.8
+matplotlib==3.10.1
 newsapi_python==0.2.7
-openai==1.32.0
-pandas==2.2.2
+openai==1.66.3
+pandas==2.2.3
 python-dotenv==1.0.1
-yfinance==0.2.37
-streamlit==1.35.0
+yfinance==0.2.54
+streamlit==1.43.2
